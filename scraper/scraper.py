@@ -14,19 +14,33 @@ _3DJUEGOS_URL = "http://www.3djuegos.com/"
 
 _3DJUEGOS_REVIEWS_URL = _3DJUEGOS_URL + "novedades/analisis/"
 
-PLATFORMS_URLS = {"pc": _3DJUEGOS_REVIEWS_URL + "juegos-pc/0f1f0f0/fecha/",
-                  "ps4": _3DJUEGOS_REVIEWS_URL + "juegos-ps4/0f37f0f0/fecha/",
-                  "xone": _3DJUEGOS_REVIEWS_URL + "juegos-xbox-one/0f38f0f0/fecha/",
-                  "switch": _3DJUEGOS_REVIEWS_URL + "juegos-nintendo-switch/0f41f0f0/fecha/",
-                  "3ds": _3DJUEGOS_REVIEWS_URL + "juegos-3ds/0f34f0f0/fecha/",
-                  "ps3": _3DJUEGOS_REVIEWS_URL + "juegos-ps3/0f2f0f0/fecha/",
-                  "x360": _3DJUEGOS_REVIEWS_URL + "juegos-x360/0f4f0f0/fecha/",
-                  "wiiu": _3DJUEGOS_REVIEWS_URL + "juegos-wiiu/0f35f0f0/fecha/",
-                  "wii": _3DJUEGOS_REVIEWS_URL + "juegos-wii/0f3f0f0/fecha/",
-                  "vita": _3DJUEGOS_REVIEWS_URL + "juegos-psvita/0f36f0f0/fecha/",
-                  "psp": _3DJUEGOS_REVIEWS_URL + "juegos-psp/0f6f0f0/fecha/",
-                  "ios": _3DJUEGOS_REVIEWS_URL + "juegos-ios/0f9f0f0/fecha/",
-                  "android": _3DJUEGOS_REVIEWS_URL + "juegos-android/0f32f0f0/fecha/"}
+PLATFORMS = {"pc": 1,
+             "ps4": 37,
+             "xbox-one": 38,
+             "nintendo-switch": 41,
+             "3ds": 34,
+             "ps3": 2,
+             "x360": 4,
+             "wiiu": 35,
+             "wii": 3,
+             "psvita": 36,
+             "psp": 6,
+             "ios": 9,
+             "android": 32}
+
+# PLATFORMS_URLS = {"pc": _3DJUEGOS_REVIEWS_URL + "juegos-pc/0f1f0f0/fecha/",
+#                   "ps4": _3DJUEGOS_REVIEWS_URL + "juegos-ps4/0f37f0f0/fecha/",
+#                   "xone": _3DJUEGOS_REVIEWS_URL + "juegos-xbox-one/0f38f0f0/fecha/",
+#                   "switch": _3DJUEGOS_REVIEWS_URL + "juegos-nintendo-switch/0f41f0f0/fecha/",
+#                   "3ds": _3DJUEGOS_REVIEWS_URL + "juegos-3ds/0f34f0f0/fecha/",
+#                   "ps3": _3DJUEGOS_REVIEWS_URL + "juegos-ps3/0f2f0f0/fecha/",
+#                   "x360": _3DJUEGOS_REVIEWS_URL + "juegos-x360/0f4f0f0/fecha/",
+#                   "wiiu": _3DJUEGOS_REVIEWS_URL + "juegos-wiiu/0f35f0f0/fecha/",
+#                   "wii": _3DJUEGOS_REVIEWS_URL + "juegos-wii/0f3f0f0/fecha/",
+#                   "vita": _3DJUEGOS_REVIEWS_URL + "juegos-psvita/0f36f0f0/fecha/",
+#                   "psp": _3DJUEGOS_REVIEWS_URL + "juegos-psp/0f6f0f0/fecha/",
+#                   "ios": _3DJUEGOS_REVIEWS_URL + "juegos-ios/0f9f0f0/fecha/",
+#                   "android": _3DJUEGOS_REVIEWS_URL + "juegos-android/0f32f0f0/fecha/"}
 
 ALL_URL = _3DJUEGOS_REVIEWS_URL + "juegos/0f0f0f0/fecha/"
 
@@ -116,15 +130,30 @@ def get_game_review(game):
   return results
 
 
-def get_latest_games_reviewed(platform="all",limit=5):
+def get_latest_games_reviewed(platform="all", limit=5):
 
-  url = PLATFORMS_URLS.get(platform.lower(), ALL_URL)
+  # url = PLATFORMS_URLS.get(platform.lower(), ALL_URL)
+  # soup = get_soup_obj(url)
+  # divs = soup.select("div.nov_int_txt.wi100")
+  # results = {}
+  # results["LatestGames"] = [
+  #     re.sub(" - Análisis", "", div.h2.a.text) for div in divs[:limit]]
+
+  platform_num = PLATFORMS.get(platform.lower(), 0)
+
+  if platform_num == 0:
+    url = _3DJUEGOS_REVIEWS_URL + "juegos/0f0f0f0/fecha/"
+  else:
+    url = _3DJUEGOS_REVIEWS_URL + "juegos-" + platform + "/0f{}f0f0/fecha/".format(platform_num)
+
   soup = get_soup_obj(url)
   divs = soup.select("div.nov_int_txt.wi100")
   results = {}
-  results["LatestGames"] = [re.sub(" - Análisis", "", div.h2.a.text) for div in divs[:limit]]
+  results["LatestGames"] = [
+      re.sub(" - Análisis", "", div.h2.a.text) for div in divs[:limit]]
+
   return results
 
 
 print(get_game_review("XCOM 2"))
-print(get_latest_games_reviewed("pc"))
+print(get_latest_games_reviewed())
