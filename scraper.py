@@ -13,7 +13,6 @@ import requests
 from urllib.parse import quote
 from urllib.error import HTTPError
 import re
-from datetime import datetime
 
 
 ##########################################
@@ -60,7 +59,6 @@ headers = {"User-Agent": "Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/53
 # HELPERS
 ##########################################
 
-
 def get_info_game(soup):
   """ (soup) -> list
   Return a list containing tuples of keys and values 
@@ -90,8 +88,12 @@ def get_soup_obj(url):
   """ (str) -> soup
   Return a BeautifulSoup object of a given url
   """
-  html = session.get(url, headers=headers).text
-  return BeautifulSoup(html, "html.parser")
+  try:
+    html = session.get(url, headers=headers).text
+    return BeautifulSoup(html, "html.parser")
+  except HTTPError:
+    print("{} not reachable".format(url))
+    return None
 
 
 def is_valid_url(game, url):
@@ -109,7 +111,6 @@ def is_valid_url(game, url):
 # SERVICES 
 ##########################################
 
-
 def get_game_review(game):
   """ (str) -> dict
   Return a dict containing information about the game
@@ -125,25 +126,21 @@ def get_game_review(game):
     elements = wait.until(EC.presence_of_all_elements_located(
         (By.CSS_SELECTOR, "a.xXx.b")))
   except TimeoutException:
-    print("The game has not been analysed yet!!!")
     return None
 
   results = {}
   results["reviews"] = []
   for element in elements:
     if is_valid_url(game, element.get_attribute("href")):
-      try:
-        soup = get_soup_obj(element.get_attribute("href"))
-      except HTTPError:
-        print("{} not reachable".format(element.get_attribute("href")))
-        continue
-      results["reviews"].append({
+      soup = get_soup_obj(element.get_attribute("href"))
+      if soup:
+        results["reviews"].append({
           key: value for key, value in get_info_game(soup)})
 
   return results
 
 
-def get_latest_games_reviewed(platform="all", limit=5):
+def get_latest_games_reviewed(platform, limit):
   """ (str) -> dict
   Return a dict containing the name of the latest games reviewed
   """
@@ -156,6 +153,8 @@ def get_latest_games_reviewed(platform="all", limit=5):
         platform + "/0f{}f0f0/fecha/".format(platform_num)
 
   soup = get_soup_obj(url)
+  if not soup:
+    return None
   divs = soup.select("div.nov_int_txt.wi100")
   results = {}
   results["latestGames"] = [
@@ -164,7 +163,7 @@ def get_latest_games_reviewed(platform="all", limit=5):
   return results
 
 
-def get_releases(platform="all", year=datetime.now().year, month=datetime.now().month):
+def get_releases(platform, year, month):
   """ (str) -> dict
   Return a dict containing information about the latest games released
   """
@@ -177,6 +176,8 @@ def get_releases(platform="all", year=datetime.now().year, month=datetime.now().
         "/por-mes/{}/{}/{}/".format(platform_num, year, month)
 
   soup = get_soup_obj(url)
+  if not soup:
+    return None
   results = {}
   results["games"] = []
   root = soup.find("div", {"class": "pad_rl10"})
@@ -192,11 +193,3 @@ def get_releases(platform="all", year=datetime.now().year, month=datetime.now().
 
   return results
 
-
-print(get_game_review("F1 2017"))
-print()
-# print(get_latest_games_reviewed("ps4"))
-# print()
-# print(get_releases("ps4", 2017, 10))
-# print()
-# print(get_releases())
