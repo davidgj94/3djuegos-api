@@ -62,7 +62,9 @@ headers = {"User-Agent": "Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/53
 
 
 def get_info_game(soup):
-
+  """ (soup) -> list
+  Return a list containing tuples of keys and values 
+  """
   info = []
 
   content = soup.select("div.fftit.s20.b").pop()
@@ -85,13 +87,17 @@ def get_info_game(soup):
 
 
 def get_soup_obj(url):
-
+  """ (str) -> soup
+  Return a BeautifulSoup object of a given url
+  """
   html = session.get(url, headers=headers).text
   return BeautifulSoup(html, "html.parser")
 
 
 def is_valid_url(game, url):
-
+  """ (str, str) -> boolean
+  Check whether a link go to a review of the game we are interested
+  """
   game_norm = "-".join(re.sub('[^a-zA-Z0-9 ]', '', game.lower()).split())
   if re.search("\/([^/]+)\/$", url):
     return game_norm == re.search("\/([^/]+)\/$", url).group(1)
@@ -105,7 +111,9 @@ def is_valid_url(game, url):
 
 
 def get_game_review(game):
-
+  """ (str) -> dict
+  Return a dict containing information about the game
+  """
   url = _3DJUEGOS_URL + "?q=" + quote(game) + "&zona=resultados-buscador&ni=1"
 
   try:
@@ -136,7 +144,9 @@ def get_game_review(game):
 
 
 def get_latest_games_reviewed(platform="all", limit=5):
-
+  """ (str) -> dict
+  Return a dict containing the name of the latest games reviewed
+  """
   platform_num = PLATFORMS.get(platform.lower(), 0)
 
   if platform_num == 0:
@@ -155,7 +165,9 @@ def get_latest_games_reviewed(platform="all", limit=5):
 
 
 def get_releases(platform="all", year=datetime.now().year, month=datetime.now().month):
-
+  """ (str) -> dict
+  Return a dict containing information about the latest games released
+  """
   platform_num = PLATFORMS.get(platform.lower(), 0)
 
   if platform_num == 0:
