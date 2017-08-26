@@ -65,10 +65,10 @@ headers = {"User-Agent": "Mozilla/5.0 (X11; U; Linux i686; en-US) AppleWebKit/53
 # HELPERS
 ##########################################
 
-def get_platform(soup):
-  content = soup.select("div.fftit.s20.b").pop().text
-  platform = re.search(r'\((.*?)\)', content).group(1)
-  return platform
+# def get_platform(soup):
+#   content = soup.select("div.fftit.s20.b").pop().text
+#   platform = re.search(r'\((.*?)\)', content).group(1)
+#   return platform
 
 
 # def get_scores(soup):
@@ -79,6 +79,10 @@ def get_platform(soup):
 def get_info(soup):
 
   info = []
+
+  content = soup.select("div.fftit.s20.b").pop()
+  info.append(content.span.text)
+  info.append(re.search(r'\((.*?)\)', content.text).group(1))
 
   for dt, dd in zip(soup.findAll("dt"), soup.findAll("dd")):
     if dt.text == "Desarrollador:":
@@ -92,12 +96,13 @@ def get_info(soup):
 
   info.extend([div.span.text for div in soup.select("div.dtc.wi36")])
 
-  return zip(["Study", "Publisher", "Genre", "ReleaseDate", "3DJuegosScore", "UserScore"], info)
+  return zip(["name", "platform", "study", "publisher", "genre", "releaseDate", "3DJuegosScore", "userScore"], info)
 
 
 def get_soup_obj(url):
   html = session.get(url, headers=headers).text
   return BeautifulSoup(html, "html.parser")
+
 
 def is_valid_url(game, url):
   game_norm = "-".join(re.sub('[^a-zA-Z0-9 ]', '', game.lower()).split())
@@ -113,7 +118,6 @@ def is_valid_url(game, url):
 def get_game_review(game):
 
   url = _3DJUEGOS_URL + "?q=" + quote(game) + "&zona=resultados-buscador&ni=1"
-  game_name = "-".join(re.sub('[^a-zA-Z0-9 ]', '', game.lower()).split())
 
   try:
     driver.get(url)
@@ -128,7 +132,7 @@ def get_game_review(game):
     return None
 
   results = {}
-  results["Name"] = game
+  results["reviews"] = []
   for element in elements:
     if is_valid_url(game, element.get_attribute("href")):
       try:
@@ -136,8 +140,8 @@ def get_game_review(game):
       except HTTPError:
         print("{} not reachable".format(element.get_attribute("href")))
         continue
-      results[get_platform(soup)] = {
-          key: value for key, value in get_info(soup)}
+      results["reviews"].append({
+          key: value for key, value in get_info(soup)})
 
   return results
 
@@ -162,8 +166,8 @@ def get_latest_games_reviewed(platform="all", limit=5):
   soup = get_soup_obj(url)
   divs = soup.select("div.nov_int_txt.wi100")
   results = {}
-  results["LatestGames"] = [
-      re.sub(" - .*$", "", div.h2.a.text) for div in divs[:limit]]
+  results["latestGames"] = [
+      {"name": re.sub(" - .*$", "", div.h2.a.text)} for div in divs[:limit]]
 
   return results
 
@@ -195,7 +199,7 @@ def get_releases(platform="all", year=datetime.now().year, month=datetime.now().
   return results
 
 
-print(get_game_review("Call of Duty WWII"))
+print(get_game_review("F1 2017"))
 print()
 # print(get_latest_games_reviewed("ps4"))
 # print()
