@@ -9,10 +9,14 @@ import requests
 from urllib.parse import quote
 from urllib.error import HTTPError
 import re
+from datetime import datetime
 
 _3DJUEGOS_URL = "http://www.3djuegos.com/"
 
 _3DJUEGOS_REVIEWS_URL = _3DJUEGOS_URL + "novedades/analisis/"
+
+_3DJUEGOS_RELEASES_URL = _3DJUEGOS_URL + "lanzamientos-juegos/"
+
 
 PLATFORMS = {"pc": 1,
              "ps4": 37,
@@ -49,7 +53,7 @@ dcap["phantomjs.page.settings.userAgent"] = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/53 ",
     "(KHTML, like Gecko) Chrome/15.0.87")
 driver = webdriver.PhantomJS(desired_capabilities=dcap)
-driver.set_page_load_timeout(6)
+driver.set_page_load_timeout(10)
 wait = WebDriverWait(driver, 6)
 
 session = requests.Session()
@@ -95,6 +99,13 @@ def get_soup_obj(url):
   html = session.get(url, headers=headers).text
   return BeautifulSoup(html, "html.parser")
 
+def is_valid_url(game, url):
+  game_norm = "-".join(re.sub('[^a-zA-Z0-9 ]', '', game.lower()).split())
+  if re.search("\/([^/]+)\/$", url):
+    return game_norm == re.search("\/([^/]+)\/$", url).group(1)
+  else:
+    return False
+
 
 ##########################################
 
@@ -102,6 +113,7 @@ def get_soup_obj(url):
 def get_game_review(game):
 
   url = _3DJUEGOS_URL + "?q=" + quote(game) + "&zona=resultados-buscador&ni=1"
+  game_name = "-".join(re.sub('[^a-zA-Z0-9 ]', '', game.lower()).split())
 
   try:
     driver.get(url)
@@ -118,7 +130,7 @@ def get_game_review(game):
   results = {}
   results["Name"] = game
   for element in elements:
-    if element.text.lower() == game.lower():
+    if is_valid_url(game, element.get_attribute("href")):
       try:
         soup = get_soup_obj(element.get_attribute("href"))
       except HTTPError:
@@ -144,16 +156,49 @@ def get_latest_games_reviewed(platform="all", limit=5):
   if platform_num == 0:
     url = _3DJUEGOS_REVIEWS_URL + "juegos/0f0f0f0/fecha/"
   else:
-    url = _3DJUEGOS_REVIEWS_URL + "juegos-" + platform + "/0f{}f0f0/fecha/".format(platform_num)
+    url = _3DJUEGOS_REVIEWS_URL + "juegos-" + \
+        platform + "/0f{}f0f0/fecha/".format(platform_num)
 
   soup = get_soup_obj(url)
   divs = soup.select("div.nov_int_txt.wi100")
   results = {}
   results["LatestGames"] = [
-      re.sub(" - Análisis", "", div.h2.a.text) for div in divs[:limit]]
+      re.sub(" - .*$", "", div.h2.a.text) for div in divs[:limit]]
 
   return results
 
 
-print(get_game_review("XCOM 2"))
-print(get_latest_games_reviewed())
+def get_releases(platform="all", year=datetime.now().year, month=datetime.now().month):
+
+  platform_num = PLATFORMS.get(platform.lower(), 0)
+
+  if platform_num == 0:
+    url = _3DJUEGOS_RELEASES_URL + "todos/por-mes/0/{}/{}/".format(year, month)
+  else:
+    url = _3DJUEGOS_RELEASES_URL + platform + \
+        "/por-mes/{}/{}/{}/".format(platform_num, year, month)
+
+  soup = get_soup_obj(url)
+  results = {}
+  results["games"] = []
+  root = soup.find("div", {"class": "pad_rl10"})
+  for div in root.findAll("div"):
+    if div.attrs["class"] == ["s20", "ffnav", "b", "mar_t50"]:
+      release_date = "{}-{}-{}".format(year, month,
+                                       re.search(r'\d+', div.span.text).group())
+    elif div.attrs["class"] == ["dtc", "vam"]:
+      name = div.a.span.text
+      platform = div.div.span.text
+      results["games"].append(
+          {"name": name, "platform": platform, "releaseDate": release_date})
+
+  return results
+
+
+print(get_game_review("Call of Duty WWII"))
+print()
+# print(get_latest_games_reviewed("ps4"))
+# print()
+# print(get_releases("ps4", 2017, 10))
+# print()
+# print(get_releases())
