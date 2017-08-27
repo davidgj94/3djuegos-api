@@ -10,7 +10,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 import requests
-from urllib.parse import quote
+from urllib.parse import unquote
 from urllib.error import HTTPError
 import re
 
@@ -100,7 +100,7 @@ def is_valid_url(game, url):
   """ (str, str) -> boolean
   Check whether a link go to a review of the game we are interested
   """
-  game_norm = "-".join(re.sub('[^a-zA-Z0-9 ]', '', game.lower()).split())
+  game_norm = "-".join(re.sub('[^a-zA-Z0-9 ]', '', unquote(game).lower()).split())
   if re.search("\/([^/]+)\/$", url):
     return game_norm == re.search("\/([^/]+)\/$", url).group(1)
   else:
@@ -115,7 +115,7 @@ def get_game_review(game):
   """ (str) -> dict
   Return a dict containing information about the game
   """
-  url = _3DJUEGOS_URL + "?q=" + quote(game) + "&zona=resultados-buscador&ni=1"
+  url = _3DJUEGOS_URL + "?q=" + game + "&zona=resultados-buscador&ni=1"
 
   try:
     driver.get(url)
