@@ -4,6 +4,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+
 ##########################################
 # GAME REVIEWS
 ##########################################
@@ -30,6 +31,7 @@ def latest_games_reviewed(platform="all"):
 ##########################################
 # RELEASES
 ##########################################
+
 @app.route('/releases')
 @app.route('/releases/<year>/<month>')
 @app.route('/releases/<year>/<month>/<platform>')
